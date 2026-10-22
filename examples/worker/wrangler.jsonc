@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ai-gateway-workers",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "observability": {
+    "enabled": true,
+  },
+  "vars": {
+    // "1" menjawab dengan teks contoh tanpa memanggil model apa pun. Hapus saat sudah
+    // menyambungkan UPSTREAM_URL.
+    "MOCK": "1",
+  },
+}

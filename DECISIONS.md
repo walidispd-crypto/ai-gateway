@@ -1,7 +1,8 @@
 # Keputusan teknis
 
 - **Next.js 15 + React 19 + Tailwind 3, npm.** Versi dipin agar build reprodusibel; `package-lock.json` ikut di-commit.
-- **Route handler Node, bukan edge.** Streaming dan `AbortController` sama-sama didukung, tetapi Node memberi batas waktu function yang eksplisit (`maxDuration = 60`) dan tidak menambah batas ukuran respons edge. Tidak ada keuntungan edge untuk satu pengguna.
+- **Route handler Node, bukan edge.** Streaming dan `AbortController` sama-sama didukung, tetapi Node memberi batas waktu function yang eksplisit (`maxDuration`) dan tidak menambah batas ukuran respons edge. Tidak ada keuntungan edge untuk satu pengguna.
+- **`maxDuration = 300`, bukan 60.** Dengan Fluid Compute (default) Hobby mengizinkan 300 detik; 60 detik adalah batas lama sebelum Fluid Compute. Batas atas tetap dijaga `timeoutMs`/`idleTimeoutMs` per model, jadi angka ini hanya mencegah jawaban panjang terpotong.
 - **Browser ↔ Vercel memakai NDJSON, bukan SSE.** Satu JSON per baris tidak bisa di-buffer sebagian proxy dan parser-nya ±20 baris, sementara Worker tetap memakai kontrak SSE/JSON yang sudah ditentukan.
 - **Registry model tetap di server; client menerima field tampilan lewat props RSC.** Ini menjaga nama env dan konfigurasi Worker tidak masuk bundle, tanpa memecah registry jadi dua file.
 - **zod hanya di server dan dimuat dinamis untuk validasi impor.** Client memakai type guard kecil untuk event stream agar bundel awal tidak bertambah ±13 KB.

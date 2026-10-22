@@ -134,8 +134,10 @@ Field opsional: `timeoutMs`, `idleTimeoutMs`, `fallbackId`, `upstreamModel`. `ta
 1. Push repo ke GitHub, impor di Vercel. Framework terdeteksi otomatis (Next.js).
 2. Tambahkan `APP_PASSWORD`, `SESSION_SECRET`, dan semua `WORKER_*` di Project Settings → Environment Variables untuk Production (dan Preview bila perlu). Gunakan tipe _Sensitive_ untuk token.
 3. Deploy. Setelah itu buka `/login` dan masuk.
-4. `maxDuration` route handler diset 60 detik (`src/app/api/chat/route.ts`). Batas ini mengikuti plan Vercel: pada Hobby satu function tidak boleh berjalan lebih dari 60 detik, jadi jawaban yang lebih lama akan terpotong. Streaming tidak menambah batas waktu function; bila butuh jawaban lebih lama, naikkan `maxDuration` sesuai batas plan atau pecah permintaan.
+4. `maxDuration` route handler diset 300 detik (`src/app/api/chat/route.ts`). Dengan Fluid Compute (default sekarang) Hobby mengizinkan 300 detik dan Pro sampai 800 detik. Perhatikan juga `timeoutMs` per model (default 60 detik untuk token pertama): jawaban yang lama sebelum token pertama akan gagal di situ walau `maxDuration` besar.
 5. Pastikan Worker mengizinkan request dari Vercel (tidak perlu CORS karena dipanggil server-ke-server) dan mengembalikan respons streaming tanpa buffer proxy.
+
+Panduan langkah demi langkah dari nol — termasuk membuat dan mendeploy Worker, verifikasi, rollback, dan troubleshooting — ada di [`docs/DEPLOY.md`](docs/DEPLOY.md). Worker contoh yang siap pakai ada di [`examples/worker`](examples/worker).
 
 ## Keamanan
 
