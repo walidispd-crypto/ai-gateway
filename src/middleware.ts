@@ -4,6 +4,10 @@ import { SESSION_COOKIE, getSessionSecret, verifySessionToken } from "@/server/a
 const PUBLIC_PAGES = new Set(["/login"]);
 const PUBLIC_APIS = new Set(["/api/login"]);
 
+// Framing is denied by default. The flag exists only for hosted preview panes that embed
+// the app in an iframe; it must stay unset on Vercel.
+const allowEmbed = process.env.ALLOW_IFRAME_EMBED === "1";
+
 function securityHeaders(nonce: string): Headers {
   const isDev = process.env.NODE_ENV !== "production";
   const csp = [
@@ -16,7 +20,7 @@ function securityHeaders(nonce: string): Headers {
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    "frame-ancestors 'none'",
+    allowEmbed ? "frame-ancestors 'self' https:" : "frame-ancestors 'none'",
     "frame-src 'none'",
   ].join("; ");
 
@@ -24,6 +28,7 @@ function securityHeaders(nonce: string): Headers {
     "Content-Security-Policy": csp,
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
+    ...(allowEmbed ? {} : { "X-Frame-Options": "DENY" }),
   });
 }
 

@@ -13,6 +13,7 @@
 - **Lampiran jadi blok kode berlabel**: satu baris nama file dalam inline code diikuti fenced block. Format ini tetap terbaca sebagai teks biasa dan tidak merusak isi kode saat disalin.
 - **`<dialog>` native dan `window.confirm`** untuk system prompt dan hapus percakapan; keduanya sudah menangani fokus, Esc, dan pembaca layar tanpa dependensi UI.
 - **Rate limit login di memori proses.** Cukup untuk satu instance dan memperlambat tebing password; batas ini didokumentasikan di README, bukan dianggap global.
+- **Framing ditolak secara default, dengan opt-in `ALLOW_IFRAME_EMBED=1`** untuk panel preview yang menempelkan app dalam iframe; opsi ini tidak dipakai di produksi.
 - **`img-src` tidak mengizinkan domain luar**, sehingga gambar dari internet di dalam markdown tidak dimuat (pilihan sadar untuk privasi).
 - **Fallback hanya sebelum token pertama dan selalu ditampilkan.** Menyembunyikan perpindahan model akan menyesatkan saat membandingkan kualitas jawaban.
 - **Timeout diuji dengan entri registry sementara** (`probe-test`, `timeoutMs: 1500`, `idleTimeoutMs: 1200`) yang dihapus setelah verifikasi; ini sekaligus membuktikan penambahan model hanya butuh satu entri + satu env var.

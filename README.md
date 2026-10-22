@@ -144,6 +144,7 @@ Field opsional: `timeoutMs`, `idleTimeoutMs`, `fallbackId`, `upstreamModel`. `ta
 - Rate limit login: 8 percobaan / 10 menit per IP **per instance** (memori proses; Vercel bisa menjalankan beberapa instance, jadi batas efektif lebih longgar).
 - Markdown dirender tanpa HTML mentah (`skipHtml`); tautan keluar memakai `rel="noopener noreferrer"`.
 - CSP berbasis nonce (middleware), `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `frame-ancestors 'none'`. `img-src` dibatasi ke origin sendiri, `data:`, dan `blob:`.
+- Framing hanya dibuka bila `ALLOW_IFRAME_EMBED=1` (dipakai untuk panel preview di sandbox). Jangan set di Vercel.
 - Body `/api/chat` dibatasi 1,5 MB; pesan maksimal 200.000 karakter; maksimal 200 pesan per permintaan.
 
 ## Struktur
