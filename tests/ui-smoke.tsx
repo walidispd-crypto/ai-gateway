@@ -12,6 +12,8 @@ import {
   downloadConversationsJson,
   parseImportFile,
 } from "@/lib/export-import";
+import { flushSave, loadChatState, scheduleSave } from "@/lib/chat-storage";
+import type { Conversation } from "@/lib/chat-types";
 
 const encoder = new TextEncoder();
 const models = [
@@ -210,6 +212,27 @@ async function main() {
     ),
   );
   console.log("ui: lazy shiki highlight + copy control ok", { tokens: tokens.length });
+
+  console.log("ui: IndexedDB persistence");
+  const liveState = useChatStore.getState();
+  scheduleSave({ conversations: liveState.conversations, activeId: liveState.activeId });
+  flushSave();
+  await wait(300);
+  const stored = await loadChatState();
+  assert.ok(stored, "state was written to IndexedDB");
+  const storedConversation = stored!.conversations.find((conversation: Conversation) =>
+    conversation.messages.some((message) => message.content.includes("export function add")),
+  );
+  assert.ok(storedConversation, "messages survive a save → load cycle");
+  await act(async () => {
+    useChatStore.getState().hydrate(stored!.conversations, stored!.activeId);
+  });
+  await wait(100);
+  assert.ok(
+    (document.body.textContent ?? "").includes("Berikut contohnya."),
+    "hydrating persisted state re-renders the conversation",
+  );
+  console.log("ui: persistence reload ok");
 
   await act(async () => {
     useChatStore

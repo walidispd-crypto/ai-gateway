@@ -1,3 +1,4 @@
+import "fake-indexeddb/auto";
 import { JSDOM } from "jsdom";
 import { act } from "react";
 

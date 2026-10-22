@@ -47,7 +47,7 @@ npm run test:types   # typecheck khusus kode tes
 
 `test:ui` memakai jsdom + tsx (devDependencies) dan tidak butuh browser. Tes ini memverifikasi
 mount, pengiriman pesan, streaming NDJSON, highlight Shiki, state error/terputus, tombol Stop,
-serta ekspor → impor yang identik.
+persistensi IndexedDB (simpan → muat ulang → render), serta ekspor → impor yang identik.
 
 ## Daftar env var
 
