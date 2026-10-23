@@ -21,6 +21,8 @@ define("navigator", dom.window.navigator);
 define("HTMLElement", dom.window.HTMLElement);
 define("HTMLTextAreaElement", dom.window.HTMLTextAreaElement);
 define("HTMLInputElement", dom.window.HTMLInputElement);
+define("HTMLSelectElement", dom.window.HTMLSelectElement);
+define("HTMLIFrameElement", dom.window.HTMLIFrameElement);
 define("HTMLAnchorElement", dom.window.HTMLAnchorElement);
 define("HTMLDialogElement", dom.window.HTMLDialogElement);
 define("Node", dom.window.Node);

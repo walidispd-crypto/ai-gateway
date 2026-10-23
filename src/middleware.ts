@@ -21,6 +21,9 @@ function securityHeaders(nonce: string): Headers {
     "base-uri 'self'",
     "form-action 'self'",
     allowEmbed ? "frame-ancestors 'self' https:" : "frame-ancestors 'none'",
+    // The file panel previews HTML/SVG in a sandboxed `srcdoc` frame. `frame-src` does not govern
+    // `srcdoc` (it is not a fetch), so this stays 'none' and the preview is locked down by the
+    // sandbox attribute plus its own `default-src 'none'` meta instead.
     "frame-src 'none'",
   ].join("; ");
 
