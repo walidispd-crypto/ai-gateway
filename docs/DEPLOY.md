@@ -221,16 +221,16 @@ besar atau melakukan kriptografi berat per request.
 Project Settings → Environment Variables. Centang **Production** (dan **Preview** bila ingin
 preview bisa dipakai), lalu untuk token pilih tipe **Sensitive**.
 
-| Nama                      | Wajib      | Contoh nilai                                         |
-| ------------------------- | ---------- | ---------------------------------------------------- |
-| `APP_PASSWORD`            | ya         | kata sandi pilihanmu, disimpan sebagai Sensitive     |
-| `SESSION_SECRET`          | ya         | `openssl rand -base64 48` — **minimal 32 karakter**  |
-| `WORKER_CODER_FAST_URL`   | ya\*       | `https://ai-gateway-workers.x.workers.dev/openai`    |
-| `WORKER_CODER_FAST_TOKEN` | disarankan | token dari `wrangler secret put WORKER_TOKEN`        |
-| `WORKER_CODER_DEEP_URL`   | ya\*       | `https://ai-gateway-workers.x.workers.dev/sse-text`  |
-| `WORKER_CODER_DEEP_TOKEN` | disarankan | idem                                                 |
-| `WORKER_GENERAL_URL`      | ya\*       | `https://ai-gateway-workers.x.workers.dev/json-text` |
-| `WORKER_GENERAL_TOKEN`    | disarankan | idem                                                 |
+| Nama                 | Wajib      | Contoh nilai                                        |
+| -------------------- | ---------- | --------------------------------------------------- |
+| `APP_PASSWORD`       | ya         | kata sandi pilihanmu, disimpan sebagai Sensitive    |
+| `SESSION_SECRET`     | ya         | `openssl rand -base64 48` — **minimal 32 karakter** |
+| `WORKER_RADOX_URL`   | ya\*       | `https://ai-gateway-workers.x.workers.dev/openai`   |
+| `WORKER_RADOX_TOKEN` | disarankan | token dari `wrangler secret put WORKER_TOKEN`       |
+| `WORKER_P2_URL`      | ya\*       | `https://ai-gateway-workers.x.workers.dev/openai`   |
+| `WORKER_P2_TOKEN`    | disarankan | idem                                                |
+| `WORKER_P3_URL`      | ya\*       | `https://ai-gateway-workers.x.workers.dev/openai`   |
+| `WORKER_P3_TOKEN`    | disarankan | idem                                                |
 
 \* Hanya untuk model yang benar-benar kamu pakai. Model tanpa URL akan menampilkan pesan
 "URL Worker ... belum diatur di server" di UI, bukan crash.
@@ -291,7 +291,7 @@ curl -s -c /tmp/c.txt -X POST https://<domain>/api/login \
 # 5. Streaming lewat proxy (NDJSON: meta → delta → done)
 curl -sN -b /tmp/c.txt -X POST https://<domain>/api/chat \
   -H 'content-type: application/json' \
-  -d '{"modelId":"coder-fast","messages":[{"role":"user","content":"Halo"}]}'
+  -d '{"modelId":"glm-p2","messages":[{"role":"user","content":"Halo"}]}'
 ```
 
 Checklist di browser:

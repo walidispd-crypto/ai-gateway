@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Conversation } from "@/lib/chat-types";
+import { MAX_MODEL_NAME_LENGTH, MODEL_NAME_PATTERN } from "@/lib/model-name";
 
 const messageSchema = z.object({
   id: z.string().min(1),
@@ -10,6 +11,7 @@ const messageSchema = z.object({
   error: z.string().optional(),
   errorCode: z.enum(["upstream", "timeout", "network", "config", "format", "aborted"]).optional(),
   modelLabel: z.string().optional(),
+  modelName: z.string().max(MAX_MODEL_NAME_LENGTH).optional(),
   fallbackFromLabel: z.string().optional(),
 });
 
@@ -19,6 +21,8 @@ const conversationSchema = z.object({
   createdAt: z.number().int().nonnegative(),
   updatedAt: z.number().int().nonnegative(),
   modelId: z.string().min(1),
+  // Optional so files exported before this field existed still import cleanly.
+  customModel: z.string().max(MAX_MODEL_NAME_LENGTH).regex(MODEL_NAME_PATTERN).optional(),
   system: z.string(),
   messages: z.array(messageSchema),
 });

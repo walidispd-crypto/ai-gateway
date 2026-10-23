@@ -24,6 +24,13 @@ function envFromFile(key) {
 }
 
 const APP_PASSWORD = envFromFile("APP_PASSWORD");
+
+// Mirrors src/config/models.ts: ids, default upstream model, and the configured fallback chain.
+const PROVIDERS = ["luna", "glm-p2", "glm-p3"];
+const PRIMARY = "luna";
+const PRIMARY_FALLBACK = "glm-p2";
+const FALLBACK_UPSTREAM_MODEL = "glm-5.3";
+const NO_FALLBACK_PROVIDER = "glm-p3";
 let cookie = "";
 let failures = 0;
 let passes = 0;
@@ -43,6 +50,16 @@ function eventsFrom(ndjson) {
     .split("\n")
     .filter((line) => line.trim().length > 0)
     .map((line) => JSON.parse(line));
+}
+
+async function mockRequests() {
+  return (await fetch(`${MOCK_URL}/_requests`)).json();
+}
+
+/** Last Worker request whose final user message matches, so concurrent tests cannot collide. */
+async function lastWorkerRequest(content) {
+  const log = await mockRequests();
+  return log.filter((entry) => entry.body.messages?.at(-1)?.content === content).at(-1);
 }
 
 async function chat(payload, { signal } = {}) {
@@ -98,48 +115,28 @@ async function main() {
   });
   check("Cookie palsu → 401", tampered.status === 401);
 
-  console.log("\nStreaming formats");
-  const openai = await chat({
-    modelId: "coder-fast",
-    system: "Kamu asisten.",
-    messages: [{ role: "user", content: "Halo" }],
-  });
-  const openaiText = openai.events
-    .filter((event) => event.type === "delta")
-    .map((event) => event.text)
-    .join("");
-  check(
-    "openai: meta + delta + done",
-    openai.events[0]?.type === "meta" && openai.events.at(-1)?.type === "done",
-  );
-  check("openai: teks utuh", openaiText.includes("export function add"));
-
-  const sseText = await chat({
-    modelId: "coder-deep",
-    messages: [{ role: "user", content: "Halo" }],
-  });
-  const sseTextContent = sseText.events
-    .filter((event) => event.type === "delta")
-    .map((event) => event.text)
-    .join("");
-  check(
-    "sse-text: done + teks utuh",
-    sseText.events.at(-1)?.type === "done" && sseTextContent.includes("export function add"),
-  );
-
-  const jsonText = await chat({
-    modelId: "general",
-    messages: [{ role: "user", content: "Halo" }],
-  });
-  const jsonDeltas = jsonText.events.filter((event) => event.type === "delta");
-  check(
-    "json-text: satu potongan + done",
-    jsonDeltas.length === 1 && jsonText.events.at(-1)?.type === "done",
-  );
+  console.log("\nStreaming per penyedia");
+  for (const modelId of PROVIDERS) {
+    const result = await chat({
+      modelId,
+      system: "Kamu asisten.",
+      messages: [{ role: "user", content: `Halo ${modelId}` }],
+    });
+    const text = result.events
+      .filter((event) => event.type === "delta")
+      .map((event) => event.text)
+      .join("");
+    check(
+      `${modelId}: meta + delta + done`,
+      result.events[0]?.type === "meta" && result.events.at(-1)?.type === "done",
+    );
+    check(`${modelId}: teks utuh`, text.includes("export function add"));
+    check(`${modelId}: meta memuat nama model`, typeof result.events[0]?.modelName === "string");
+  }
 
   console.log("\nFailures");
   const upstream500 = await chat({
-    modelId: "general",
+    modelId: NO_FALLBACK_PROVIDER,
     messages: [{ role: "user", content: "MOCK_502" }],
   });
   const errorEvent = upstream500.events.find((event) => event.type === "error");
@@ -150,17 +147,29 @@ async function main() {
   );
 
   const fallback = await chat({
-    modelId: "coder-fast",
-    messages: [{ role: "user", content: "MOCK_500" }],
+    modelId: PRIMARY,
+    customModel: "fail-model",
+    messages: [{ role: "user", content: "Uji fallback" }],
   });
   const fallbackMeta = fallback.events.find((event) => event.type === "meta");
   check(
     "Fallback terekspos di meta",
-    fallbackMeta?.modelId === "coder-deep" && fallbackMeta?.fallbackFrom?.modelId === "coder-fast",
+    fallbackMeta?.modelId === PRIMARY_FALLBACK && fallbackMeta?.fallbackFrom?.modelId === PRIMARY,
+  );
+  check(
+    "Override tidak ikut ke fallback",
+    fallbackMeta?.modelName === FALLBACK_UPSTREAM_MODEL,
+    `modelName=${fallbackMeta?.modelName}`,
+  );
+  const fallbackRequest = await lastWorkerRequest("Uji fallback");
+  check(
+    "Worker fallback menerima model miliknya sendiri",
+    fallbackRequest?.body.model === FALLBACK_UPSTREAM_MODEL,
+    `model=${fallbackRequest?.body.model}`,
   );
 
   const disconnected = await chat({
-    modelId: "coder-deep",
+    modelId: PRIMARY_FALLBACK,
     messages: [{ role: "user", content: "MOCK_DISCONNECT" }],
   });
   const disconnectError = disconnected.events.find((event) => event.type === "error");
@@ -171,7 +180,7 @@ async function main() {
   console.log("\nStop / abort");
   const controller = new AbortController();
   const slow = chat(
-    { modelId: "coder-deep", messages: [{ role: "user", content: "MOCK_SLOW" }] },
+    { modelId: PRIMARY_FALLBACK, messages: [{ role: "user", content: "MOCK_SLOW" }] },
     { signal: controller.signal },
   );
   await new Promise((resolve) => setTimeout(resolve, 250));
@@ -191,12 +200,59 @@ async function main() {
     .at(-1);
   check("Abort diteruskan ke Worker", slowRecord?.aborted === true);
 
+  console.log("\nNama model kustom");
+  const override = await chat({
+    modelId: PRIMARY,
+    customModel: "claude-opus-5",
+    messages: [{ role: "user", content: "Uji override" }],
+  });
+  const overrideMeta = override.events.find((event) => event.type === "meta");
+  check("Override dipakai di meta", overrideMeta?.modelName === "claude-opus-5");
+  check("Override tidak mengubah penyedia", overrideMeta?.modelId === PRIMARY);
+
+  const overrideRequest = await lastWorkerRequest("Uji override");
+  check(
+    "Worker menerima nama model kustom",
+    overrideRequest?.body.model === "claude-opus-5",
+    `model=${overrideRequest?.body.model}`,
+  );
+  check(
+    "URL dan token tetap dari env server",
+    overrideRequest?.authorization === `Bearer ${envFromFile("WORKER_RADOX_TOKEN")}`,
+    "authorization berubah",
+  );
+
+  const dotted = await chat({
+    modelId: PRIMARY,
+    customModel: "vendor/model.v2:beta_1-x",
+    messages: [{ role: "user", content: "Uji karakter sah" }],
+  });
+  check("Karakter sah diterima (./_:- )", dotted.events.at(-1)?.type === "done");
+
+  for (const [label, customModel] of [
+    ["spasi", "claude opus"],
+    ["karakter aneh", "claude$opus"],
+    ["terlalu panjang", "a".repeat(101)],
+    ["kosong", ""],
+  ]) {
+    const response = await fetch(`${BASE_URL}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: cookie },
+      body: JSON.stringify({
+        modelId: PRIMARY,
+        customModel,
+        messages: [{ role: "user", content: "x" }],
+      }),
+    });
+    check(`customModel ${label} → 400`, response.status === 400, `status ${response.status}`);
+  }
+
   console.log("\nValidation & limits");
   const huge = await fetch(`${BASE_URL}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Cookie: cookie },
     body: JSON.stringify({
-      modelId: "general",
+      modelId: NO_FALLBACK_PROVIDER,
       messages: [{ role: "user", content: "x".repeat(1_600_000) }],
     }),
   });
@@ -205,7 +261,7 @@ async function main() {
   const invalid = await fetch(`${BASE_URL}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Cookie: cookie },
-    body: JSON.stringify({ modelId: "general", messages: [] }),
+    body: JSON.stringify({ modelId: NO_FALLBACK_PROVIDER, messages: [] }),
   });
   check("Body tidak valid → 400", invalid.status === 400);
 
@@ -224,8 +280,12 @@ async function main() {
     const secrets = [
       APP_PASSWORD,
       envFromFile("SESSION_SECRET"),
-      envFromFile("WORKER_CODER_FAST_TOKEN"),
-      envFromFile("WORKER_CODER_FAST_URL"),
+      envFromFile("WORKER_RADOX_TOKEN"),
+      envFromFile("WORKER_RADOX_URL"),
+      envFromFile("WORKER_P2_TOKEN"),
+      envFromFile("WORKER_P2_URL"),
+      envFromFile("WORKER_P3_TOKEN"),
+      envFromFile("WORKER_P3_URL"),
     ].filter(Boolean);
     const leaked = secrets.some((secret) => html.includes(secret));
     check("HTML tidak memuat secret server", !leaked);
@@ -247,7 +307,7 @@ async function main() {
     const secrets = [
       APP_PASSWORD,
       envFromFile("SESSION_SECRET"),
-      envFromFile("WORKER_CODER_FAST_TOKEN"),
+      envFromFile("WORKER_RADOX_TOKEN"),
       "Bearer dev-token",
       "127.0.0.1:8787",
     ].filter(Boolean);

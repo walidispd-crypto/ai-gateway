@@ -3,8 +3,9 @@
  * Run: npm run mock-worker  (listens on 127.0.0.1:8787)
  *
  * Endpoints: /openai, /sse-text, /json-text, /_requests (inspection for smoke tests).
- * The last user message drives the scenario: MOCK_500, MOCK_DISCONNECT, MOCK_HANG,
- * MOCK_SLOW_HEADERS, MOCK_LONG.
+ * Scenario flags come from the last user message: MOCK_500, MOCK_502, MOCK_DISCONNECT,
+ * MOCK_HANG, MOCK_SLOW_HEADERS, MOCK_STALL, MOCK_SLOW, MOCK_LONG.
+ * Sending body.model === "fail-model" fails that single model, which exercises fallback.
  */
 import { createServer } from "node:http";
 
@@ -139,6 +140,12 @@ const server = createServer(async (request, response) => {
   requests.push(record);
 
   const prompt = lastUserText(body);
+
+  if (body.model === "fail-model") {
+    response.writeHead(500, { "Content-Type": "application/json" });
+    response.end(JSON.stringify({ error: "model unavailable" }));
+    return;
+  }
 
   // Only the OpenAI endpoint fails on MOCK_500, so the fallback path can be exercised end to end.
   // MOCK_502 fails everywhere, for testing the plain error path.

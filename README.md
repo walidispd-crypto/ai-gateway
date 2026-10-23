@@ -24,12 +24,12 @@ npm run dev                    # terminal 2: http://localhost:3000
 ```
 APP_PASSWORD=rahasia-uji-123
 SESSION_SECRET=uji-secret-yang-cukup-panjang-untuk-hmac-32-plus
-WORKER_CODER_FAST_URL=http://127.0.0.1:8787/openai
-WORKER_CODER_FAST_TOKEN=dev-token-fast
-WORKER_CODER_DEEP_URL=http://127.0.0.1:8787/sse-text
-WORKER_CODER_DEEP_TOKEN=dev-token-deep
-WORKER_GENERAL_URL=http://127.0.0.1:8787/json-text
-WORKER_GENERAL_TOKEN=dev-token-general
+WORKER_RADOX_URL=http://127.0.0.1:8787/openai
+WORKER_RADOX_TOKEN=dev-token-radox
+WORKER_P2_URL=http://127.0.0.1:8787/openai
+WORKER_P2_TOKEN=dev-token-p2
+WORKER_P3_URL=http://127.0.0.1:8787/openai
+WORKER_P3_TOKEN=dev-token-p3
 ```
 
 `SESSION_SECRET` minimal 32 karakter (`openssl rand -base64 48`). Tanpa secret atau `APP_PASSWORD`, login dan `/api/chat` menolak semua permintaan.
@@ -41,13 +41,15 @@ npm run build        # build produksi + cek TypeScript & lint
 npm run lint
 npm run format       # Prettier
 npm run test:smoke   # end-to-end lewat HTTP; butuh mock worker + server berjalan
-npm run test:ui      # render UI di jsdom (streaming, markdown, kode, stop, ekspor/impor)
+npm run test:ui      # render UI di jsdom (streaming, markdown, kode, stop, ekspor/impor, nama model)
+npm run test:server  # aturan override model + adapter format (tanpa server)
 npm run test:types   # typecheck khusus kode tes
 ```
 
 `test:ui` memakai jsdom + tsx (devDependencies) dan tidak butuh browser. Tes ini memverifikasi
 mount, pengiriman pesan, streaming NDJSON, highlight Shiki, state error/terputus, tombol Stop,
-persistensi IndexedDB (simpan → muat ulang → render), serta ekspor → impor yang identik.
+persistensi IndexedDB (simpan → muat ulang → render), ekspor → impor yang identik, serta
+nama model kustom (simpan, reset, saran, persistensi, validasi, impor file lama).
 
 ## Daftar env var
 
@@ -71,7 +73,7 @@ Body default:
   "messages": [{ "role": "user", "content": "..." }],
   "system": "instruksi sistem (hanya bila supportsSystemPrompt=true)",
   "stream": true,
-  "model": "opsional, dari upstreamModel"
+  "model": "opsional: customModel dari chat, atau upstreamModel registry"
 }
 ```
 
@@ -128,6 +130,17 @@ Catatan perilaku:
 3. Redeploy. Tidak ada perubahan komponen atau kode lain.
 
 Field opsional: `timeoutMs`, `idleTimeoutMs`, `fallbackId`, `upstreamModel`. `tags` dan `description` hanya untuk tampilan. `maxContextChars` dipakai untuk indikator konteks dan pemangkasan.
+
+### Nama model kustom (tanpa redeploy)
+
+Entri `MODELS` berperan sebagai **penyedia**: satu Worker + URL + token. Nama model yang dikirim ke penyedia bisa diisi dari UI:
+
+1. Di header, isi kolom **Nama model** (mis. `claude-opus-5`), lalu **Simpan**. Nilai ini disimpan per percakapan dan dipakai sebagai field `model` ke Worker menggantikan `upstreamModel`.
+2. **Reset** menghapus override dan kembali memakai `upstreamModel` entri.
+3. Nama yang pernah disimpan muncul di tombol panah sebagai saran, dikelompokkan per penyedia, dan bisa dihapus satu per satu. Saran disimpan di IndexedDB (global, bukan per percakapan).
+4. Nama yang valid: 1–100 karakter dari `A-Z a-z 0-9 . _ : / -`; spasi dan karakter lain ditolak dengan pesan di UI (server juga memvalidasi dan membalas 400).
+
+Override hanya mengubah nama model. URL dan token selalu dari env server. Override **tidak** diteruskan ke model fallback: fallback memakai `upstreamModel` miliknya sendiri, karena katalog nama tiap penyedia berbeda. Karena itu input dinonaktifkan untuk penyedia berformat selain `openai` (`supportsCustomModel` di payload `/`), dan mengganti penyedia mereset override percakapan. Nama kustom tidak perlu ditambahkan ke registry.
 
 ## Deploy ke Vercel
 

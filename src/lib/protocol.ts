@@ -7,6 +7,8 @@ export type StreamEvent =
       type: "meta";
       modelId: string;
       modelLabel: string;
+      /** Model name actually sent upstream (custom override or the entry's upstreamModel). */
+      modelName?: string;
       fallbackFrom?: { modelId: string; modelLabel: string };
     }
   | { type: "delta"; text: string }

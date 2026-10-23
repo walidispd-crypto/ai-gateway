@@ -42,6 +42,7 @@ export async function POST(request: Request): Promise<Response> {
     modelId: parsed.data.modelId,
     messages: parsed.data.messages,
     system: parsed.data.system,
+    customModel: parsed.data.customModel,
     signal: request.signal,
   });
 

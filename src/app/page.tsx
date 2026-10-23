@@ -4,13 +4,16 @@ import { ChatApp } from "@/components/chat/ChatApp";
 
 export default function HomePage() {
   // Only display metadata crosses to the client; Worker URLs and tokens stay on the server.
-  const models: PublicModel[] = MODELS.map(({ id, label, description, tags, maxContextChars }) => ({
-    id,
-    label,
-    description,
-    tags,
-    maxContextChars,
-  }));
+  const models: PublicModel[] = MODELS.map(
+    ({ id, label, description, tags, maxContextChars, format }) => ({
+      id,
+      label,
+      description,
+      tags,
+      maxContextChars,
+      supportsCustomModel: format === "openai",
+    }),
+  );
 
   return (
     <ChatApp

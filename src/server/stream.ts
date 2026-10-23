@@ -1,7 +1,7 @@
 import type { ChatMessageInput, StreamEvent } from "@/lib/protocol";
 import { findModel } from "@/config/models";
 import type { ResolvedModel } from "@/server/models";
-import { resolveModel } from "@/server/models";
+import { effectiveUpstreamModel, resolveModel } from "@/server/models";
 import { UpstreamError, errorEvent } from "@/server/errors";
 import { adapterForFormat } from "@/server/adapters";
 
@@ -9,6 +9,8 @@ type GenerateParams = {
   modelId: string;
   messages: ChatMessageInput[];
   system?: string;
+  /** Provider-side model name typed by the owner; ignored for non-OpenAI formats. */
+  customModel?: string;
   signal: AbortSignal;
 };
 
@@ -23,6 +25,7 @@ function buildWorkerBody(
   model: ResolvedModel,
   messages: ChatMessageInput[],
   system: string | undefined,
+  upstreamModel: string | undefined,
 ): string {
   const prepared = messages.map((message) => ({ role: message.role, content: message.content }));
 
@@ -45,7 +48,7 @@ function buildWorkerBody(
   } = { messages: prepared, stream: true };
 
   if (system && model.config.supportsSystemPrompt) body.system = system;
-  if (model.config.upstreamModel) body.model = model.config.upstreamModel;
+  if (upstreamModel) body.model = upstreamModel;
 
   return JSON.stringify(body);
 }
@@ -123,6 +126,7 @@ async function* streamAttempt(
   messages: ChatMessageInput[],
   system: string | undefined,
   clientSignal: AbortSignal,
+  upstreamModel: string | undefined,
 ): AsyncGenerator<string, void, void> {
   const controller = new AbortController();
   let timedOut = false;
@@ -139,7 +143,7 @@ async function* streamAttempt(
     response = await fetch(model.url, {
       method: "POST",
       headers: headersFor(model),
-      body: buildWorkerBody(model, messages, system),
+      body: buildWorkerBody(model, messages, system, upstreamModel),
       signal: controller.signal,
       cache: "no-store",
     });
@@ -195,6 +199,7 @@ export async function* generateReply({
   modelId,
   messages,
   system,
+  customModel,
   signal,
 }: GenerateParams): AsyncGenerator<StreamEvent> {
   const requested = findModel(modelId);
@@ -216,12 +221,13 @@ export async function* generateReply({
     }
   }
 
-  const metaFor = (model: ResolvedModel): StreamEvent => {
+  const metaFor = (model: ResolvedModel, modelName: string | undefined): StreamEvent => {
     const isFallback = model.config.id !== modelId;
     return {
       type: "meta",
       modelId: model.config.id,
       modelLabel: model.config.label,
+      modelName,
       fallbackFrom: isFallback ? { modelId, modelLabel: requested?.label ?? modelId } : undefined,
     };
   };
@@ -237,7 +243,9 @@ export async function* generateReply({
   let lastError: unknown = resolutionErrors[0];
 
   for (const model of candidates) {
-    const iterator = streamAttempt(model, messages, system, signal);
+    const isFallback = model.config.id !== modelId;
+    const modelName = effectiveUpstreamModel(model.config, customModel, isFallback);
+    const iterator = streamAttempt(model, messages, system, signal, modelName);
 
     let first: IteratorResult<string, void>;
     try {
@@ -255,7 +263,7 @@ export async function* generateReply({
       continue;
     }
 
-    yield metaFor(model);
+    yield metaFor(model, modelName);
 
     try {
       yield { type: "delta", text: first.value };
