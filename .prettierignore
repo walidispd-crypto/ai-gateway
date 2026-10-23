@@ -5,3 +5,4 @@ out/
 public/
 package-lock.json
 .env*
+examples/worker/.wrangler/

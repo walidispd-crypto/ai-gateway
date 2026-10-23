@@ -135,6 +135,7 @@ export function useChat({
           {
             modelId: model.id,
             system: conversation.system.trim().length > 0 ? conversation.system : undefined,
+            customModel: conversation.customModel,
             messages,
           },
           {
@@ -145,6 +146,7 @@ export function useChat({
                   batcher.flush();
                   useChatStore.getState().patchMessage(conversationId, assistantId, {
                     modelLabel: event.modelLabel,
+                    modelName: event.modelName,
                     fallbackFromLabel: event.fallbackFrom?.modelLabel,
                   });
                   break;

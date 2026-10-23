@@ -81,6 +81,9 @@ function MessageItemBase({
   const isUser = message.role === "user";
   const isActiveStream = message.status === "streaming";
   const roleLabel = isUser ? "Kamu" : (message.modelLabel ?? "Asisten");
+  // Shown only when the server reported which model actually answered, so the owner can tell
+  // a custom name from the provider default (and see the fallback's own model).
+  const modelName = !isUser ? message.modelName : undefined;
   const canCopy = message.content.trim().length > 0;
 
   async function onCopy() {
@@ -146,6 +149,11 @@ function MessageItemBase({
     <article className="group py-3" aria-busy={isActiveStream || undefined}>
       <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
         <span className="font-medium uppercase tracking-wide text-faint">{roleLabel}</span>
+        {modelName ? (
+          <span className="font-mono text-[10.5px] normal-case tracking-normal text-faint">
+            · {modelName}
+          </span>
+        ) : null}
         {message.fallbackFromLabel ? (
           <span className="text-faint">dialihkan dari {message.fallbackFromLabel}</span>
         ) : null}

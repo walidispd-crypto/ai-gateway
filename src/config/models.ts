@@ -74,7 +74,10 @@ export const DEFAULT_MODEL_ID = "glm-p2";
 export type PublicModel = Pick<
   ModelConfig,
   "id" | "label" | "description" | "tags" | "maxContextChars"
->;
+> & {
+  /** Only OpenAI-format providers accept a custom model name (see effectiveUpstreamModel). */
+  supportsCustomModel: boolean;
+};
 
 export function findModel(id: string): ModelConfig | undefined {
   return MODELS.find((model) => model.id === id);

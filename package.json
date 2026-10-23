@@ -3,16 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
+    "dev": "next dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "lint": "next lint",
     "mock-worker": "node scripts/mock-worker.mjs",
+    "start": "next start",
+    "test:server": "tsx --tsconfig tests/tsconfig.json tests/server-contract.test.ts",
     "test:smoke": "node scripts/smoke.mjs",
-    "test:ui": "tsx --tsconfig tests/tsconfig.json tests/ui-smoke.tsx",
-    "test:types": "tsc -p tests/tsconfig.json --noEmit"
+    "test:types": "tsc -p tests/tsconfig.json --noEmit",
+    "test:ui": "tsx --tsconfig tests/tsconfig.json tests/ui-smoke.tsx"
   },
   "dependencies": {
     "@shikijs/langs": "3.23.0",

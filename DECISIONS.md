@@ -1,7 +1,8 @@
 # Keputusan teknis
 
 - **Next.js 15 + React 19 + Tailwind 3, npm.** Versi dipin agar build reprodusibel; `package-lock.json` ikut di-commit.
-- **Route handler Node, bukan edge.** Streaming dan `AbortController` sama-sama didukung, tetapi Node memberi batas waktu function yang eksplisit (`maxDuration = 60`) dan tidak menambah batas ukuran respons edge. Tidak ada keuntungan edge untuk satu pengguna.
+- **Route handler Node, bukan edge.** Streaming dan `AbortController` sama-sama didukung, tetapi Node memberi batas waktu function yang eksplisit (`maxDuration`) dan tidak menambah batas ukuran respons edge. Tidak ada keuntungan edge untuk satu pengguna.
+- **`maxDuration = 300`, bukan 60.** Dengan Fluid Compute (default) Hobby mengizinkan 300 detik; 60 detik adalah batas lama sebelum Fluid Compute. Batas atas tetap dijaga `timeoutMs`/`idleTimeoutMs` per model, jadi angka ini hanya mencegah jawaban panjang terpotong.
 - **Browser ↔ Vercel memakai NDJSON, bukan SSE.** Satu JSON per baris tidak bisa di-buffer sebagian proxy dan parser-nya ±20 baris, sementara Worker tetap memakai kontrak SSE/JSON yang sudah ditentukan.
 - **Registry model tetap di server; client menerima field tampilan lewat props RSC.** Ini menjaga nama env dan konfigurasi Worker tidak masuk bundle, tanpa memecah registry jadi dua file.
 - **zod hanya di server dan dimuat dinamis untuk validasi impor.** Client memakai type guard kecil untuk event stream agar bundel awal tidak bertambah ±13 KB.
@@ -17,3 +18,8 @@
 - **`img-src` tidak mengizinkan domain luar**, sehingga gambar dari internet di dalam markdown tidak dimuat (pilihan sadar untuk privasi).
 - **Fallback hanya sebelum token pertama dan selalu ditampilkan.** Menyembunyikan perpindahan model akan menyesatkan saat membandingkan kualitas jawaban.
 - **Timeout diuji dengan entri registry sementara** (`probe-test`, `timeoutMs: 1500`, `idleTimeoutMs: 1200`) yang dihapus setelah verifikasi; ini sekaligus membuktikan penambahan model hanya butuh satu entri + satu env var.
+- **Nama model kustom adalah override per percakapan, bukan entri registry baru.** Entri `MODELS` diperlakukan sebagai penyedia (Worker + URL + token); field `customModel` opsional di body `/api/chat` menggantikan `upstreamModel` sebagai `model`. Ini memungkinkan mencoba nama model baru tanpa mengubah `src/config/models.ts` dan tanpa redeploy, sementara daftar penyedia dan kredensialnya tetap hanya di server.
+- **Override tidak berlaku untuk fallback.** Nama kustom milik katalog penyedia primer dan belum tentu ada di penyedia fallback; mengirimkannya ke fallback akan mengubah percobaan pemulihan menjadi error 4xx yang tidak informatif. `effectiveUpstreamModel()` karena itu mengabaikan `customModel` saat `isFallback`, dan label balasan menampilkan nama model fallback yang benar-benar dipakai.
+- **Override hanya untuk format `openai`.** Hanya format itu yang membaca field `model`; `sse-text`/`json-text` mengabaikannya, jadi UI menonaktifkan input lewat `supportsCustomModel` daripada menawarkan kontrol yang tidak berefek.
+- **Field `customModel`/`modelName` opsional di skema impor dan storage.** Percakapan lama dan file ekspor sebelum fitur ini harus tetap terbuka; validasi nama memakai regex yang sama di client, zod server, dan skema impor (satu sumber di `src/lib/model-name.ts`).
+- **Saran nama model di IndexedDB, terpisah dari percakapan.** Daftar saran bersifat global per penyedia (bukan per percakapan) agar bisa dipakai ulang cepat; kegagalan IndexedDB (private mode) ditelan dan tidak menghalangi penyimpanan percakapan.

@@ -13,6 +13,7 @@ type ChatState = {
   deleteConversation: (id: string) => void;
   renameConversation: (id: string, title: string) => void;
   setModel: (conversationId: string, modelId: string) => void;
+  setCustomModel: (conversationId: string, customModel: string | undefined) => void;
   setSystem: (conversationId: string, system: string) => void;
 
   addMessage: (conversationId: string, message: ChatMessage) => void;
@@ -69,6 +70,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       createdAt: now,
       updatedAt: now,
       modelId: active?.modelId ?? defaults.modelId,
+      customModel: active?.customModel,
       system: active?.system ?? defaults.system,
       messages: [],
     };
@@ -107,6 +109,18 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         ...conversation,
         modelId,
       })),
+    }));
+  },
+
+  setCustomModel: (conversationId, customModel) => {
+    set((state) => ({
+      conversations: mapConversation(state.conversations, conversationId, (conversation) => {
+        const next = { ...conversation };
+        // An empty override must disappear from the record, not linger as an empty string.
+        if (customModel) next.customModel = customModel;
+        else delete next.customModel;
+        return next;
+      }),
     }));
   },
 

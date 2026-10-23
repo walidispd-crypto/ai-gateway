@@ -11,6 +11,8 @@ export type ChatMessage = {
   error?: string;
   errorCode?: ErrorCode;
   modelLabel?: string;
+  /** Model name actually used upstream, as reported by the server's meta event. */
+  modelName?: string;
   fallbackFromLabel?: string;
 };
 
@@ -20,6 +22,8 @@ export type Conversation = {
   createdAt: number;
   updatedAt: number;
   modelId: string;
+  /** Provider-side model name typed by the owner; empty means "use the entry's default". */
+  customModel?: string;
   system: string;
   messages: ChatMessage[];
 };

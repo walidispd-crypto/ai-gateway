@@ -4,6 +4,7 @@ export type ChatRequestBody = {
   modelId: string;
   messages: ChatMessageInput[];
   system?: string;
+  customModel?: string;
 };
 
 export class ChatRequestError extends Error {

@@ -7,7 +7,8 @@ import { generateReply } from "@/server/stream";
 // Node runtime: Workers and the fetch/stream pipeline are plain Web APIs, and it keeps
 // the door open for self-hosted deployments. See DECISIONS.md.
 export const runtime = "nodejs";
-export const maxDuration = 60;
+// With Fluid compute (now the default) Hobby allows 300s and Pro 800s; see docs/DEPLOY.md.
+export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
 function jsonError(message: string, status: number): Response {
@@ -41,6 +42,7 @@ export async function POST(request: Request): Promise<Response> {
     modelId: parsed.data.modelId,
     messages: parsed.data.messages,
     system: parsed.data.system,
+    customModel: parsed.data.customModel,
     signal: request.signal,
   });
 

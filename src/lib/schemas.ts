@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_MODEL_NAME_LENGTH, MODEL_NAME_PATTERN } from "@/lib/model-name";
 
 const MAX_MESSAGES = 200;
 const MAX_MESSAGE_CHARS = 200_000;
@@ -6,6 +7,13 @@ const MAX_SYSTEM_CHARS = 20_000;
 
 export const chatRequestSchema = z.object({
   modelId: z.string().min(1).max(64),
+  // Provider-side model name typed by the owner; only ever used as the `model` field.
+  customModel: z
+    .string()
+    .min(1)
+    .max(MAX_MODEL_NAME_LENGTH)
+    .regex(MODEL_NAME_PATTERN, "Nama model berisi karakter yang tidak diizinkan.")
+    .optional(),
   system: z.string().max(MAX_SYSTEM_CHARS).optional(),
   messages: z
     .array(
