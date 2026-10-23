@@ -48,8 +48,11 @@ npm run test:types   # typecheck khusus kode tes
 
 `test:ui` memakai jsdom + tsx (devDependencies) dan tidak butuh browser. Tes ini memverifikasi
 mount, pengiriman pesan, streaming NDJSON, highlight Shiki, state error/terputus, tombol Stop,
-persistensi IndexedDB (simpan → muat ulang → render), ekspor → impor yang identik, serta
-nama model kustom (simpan, reset, saran, persistensi, validasi, impor file lama).
+persistensi IndexedDB (simpan → muat ulang → render), ekspor → impor yang identik, nama model
+kustom (simpan, reset, saran, persistensi, validasi, impor file lama), serta panel file: tag
+terpotong antar chunk, beberapa file sekaligus, versi dengan nama sama, stream dihentikan di
+tengah file, kode berisi teks mirip tag, salin/unduh, pratinjau iframe sandbox, dan persistensi
+panel setelah muat ulang.
 
 ## Daftar env var
 
@@ -142,6 +145,37 @@ Entri `MODELS` berperan sebagai **penyedia**: satu Worker + URL + token. Nama mo
 
 Override hanya mengubah nama model. URL dan token selalu dari env server. Override **tidak** diteruskan ke model fallback: fallback memakai `upstreamModel` miliknya sendiri, karena katalog nama tiap penyedia berbeda. Karena itu input dinonaktifkan untuk penyedia berformat selain `openai` (`supportsCustomModel` di payload `/`), dan mengganti penyedia mereset override percakapan. Nama kustom tidak perlu ditambahkan ke registry.
 
+## Panel file
+
+Jawaban yang berisi file tidak lagi menumpuk di bubble: setiap file menjadi kartu ringkas (nama, bahasa, jumlah baris, tombol **Buka**) dan isinya ditampilkan di panel kanan, atau lembar layar penuh di layar kecil.
+
+### Konvensi untuk model
+
+Aktifkan preset **Mode file** di dialog **Sistem**. Preset itu meminta model menulis setiap file utuh dengan penanda:
+
+```
+<file name="src/models.ts" lang="ts">
+...isi file lengkap...
+</file>
+```
+
+Aturan yang diminta ke model: satu tag per file, isi lengkap (bukan potongan), penjelasan di luar tag, dan revisi ditulis ulang dengan nama yang sama. Nama dibersihkan dari path dan karakter berbahaya sebelum dipakai untuk unduhan; bahasa jatuh ke ekstensi bila atribut `lang` tidak ada.
+
+Karena tidak semua model menaati konvensi, blok kode berpagar yang lebih dari 30 baris juga otomatis tampil sebagai file. Nama dan bahasanya diambil dari info string (` `ts models.ts `, ` `ts title="models.ts" `, atau ` `{.ts file="models.ts"} ```); bila tidak ada nama, panel memakai `cuplikan-<n>.<ext>`.
+
+### Perilaku
+
+- Parser membaca teks pesan saat render, jadi **tidak ada perubahan skema penyimpanan**: percakapan lama dan file ekspor/impor lama tetap sah.
+- Tag yang terpotong antar chunk tidak bocor ke bubble: file yang sedang ditulis tampil langsung di panel dengan penanda **menulis…**. Bila stream di-Stop atau terputus, file yang belum tertutup tetap ditampilkan sebagai yang sudah ada dan ditandai **belum selesai**.
+- Beberapa file dalam satu jawaban menjadi tab. Nama yang sama yang muncul lagi menjadi versi baru (`v1`, `v2`, …) dengan pemilih versi; versi terbaru dipilih otomatis.
+- `.md` dirender sebagai pratinjau, `.html`/`.svg` punya toggle **Kode/Pratinjau**.
+- Status panel (terbuka/tertutup) dan tab aktif diingat per percakapan di IndexedDB (`ai-gateway:file-panel:v1`), terpisah dari pesan.
+- Tombol panel: **Salin**, **Unduh** (nama file sudah disanitasi), **Perluas** (desktop), **Tutup**.
+
+### Keamanan pratinjau
+
+Isi file selalu dirender sebagai teks di halaman utama. Pratinjau HTML/SVG hanya lewat `<iframe sandbox="">` tanpa `allow-same-origin` dan tanpa `allow-scripts`, sehingga tidak bisa menyentuh cookie, DOM induk, maupun aplikasi. Setiap dokumen pratinjau juga membawa CSP sendiri (`default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'; font-src data:`), jadi tidak ada akses jaringan ke luar. CSP halaman **tidak dilonggarkan**: `frame-src` tetap `'none'` karena arahan itu tidak mengatur `srcdoc` (penjelasan di `DECISIONS.md`).
+
 ## Deploy ke Vercel
 
 1. Push repo ke GitHub, impor di Vercel. Framework terdeteksi otomatis (Next.js).
@@ -179,4 +213,6 @@ scripts/          mock Worker + smoke test
 - Tidak ada multi-user, sinkronisasi antar perangkat, atau pencarian isi pesan (hanya judul).
 - Model dipilih per percakapan; menghapus percakapan tidak bisa dibatalkan.
 - Fallback tidak menyamar: nama model yang menjawab selalu terlihat di pesan.
+- File diturunkan dari teks pesan; isi file di dalam tag `</file>` tidak bisa memuat `</file>` sendiri.
+- Blok kode lebih dari 30 baris selalu tampil sebagai kartu file (bukan blok kode inline).
 - Highlight kode dimatikan untuk blok > 40.000 karakter (tetap bisa disalin).

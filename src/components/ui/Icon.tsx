@@ -21,7 +21,12 @@ export type IconName =
   | "wrap"
   | "alert"
   | "play"
-  | "sliders";
+  | "sliders"
+  | "file"
+  | "expand"
+  | "shrink"
+  | "eye"
+  | "code";
 
 const PATHS: Record<IconName, string[]> = {
   plus: ["M12 5v14", "M5 12h14"],
@@ -59,6 +64,11 @@ const PATHS: Record<IconName, string[]> = {
   alert: ["M12 4 3 20h18L12 4Z", "M12 10v4", "M12 17h.01"],
   play: ["M7 4v16l13-8-13-8Z"],
   sliders: ["M4 7h10", "M18 7h2", "M4 17h4", "M12 17h8", "M14 4v6", "M8 14v6"],
+  file: ["M6 3h8l4 4v14H6z", "M14 3v4h4"],
+  expand: ["M4 9V4h5", "M20 15v5h-5", "M4 4l6 6", "M20 20l-6-6"],
+  shrink: ["M9 4v5H4", "M15 20v-5h5", "M4 20l5-5", "M20 4l-5 5"],
+  eye: ["M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z", "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"],
+  code: ["m9 8-4 4 4 4", "m15 8 4 4-4 4"],
 };
 
 export function Icon({

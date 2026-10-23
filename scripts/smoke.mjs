@@ -107,6 +107,14 @@ async function main() {
   check("GET / dengan sesi → 200", page.status === 200);
   const csp = page.headers.get("content-security-policy") ?? "";
   check("Halaman mengirim nonce CSP", /'nonce-[^']+'/.test(csp) && /script-src /.test(csp));
+  check(
+    "CSP tetap menolak frame luar (pratinjau file memakai srcdoc, bukan frame URL)",
+    /frame-src 'none'/.test(csp),
+  );
+  check(
+    "Skrip halaman tetap nonce-only",
+    !/script-src[^;]*'unsafe-inline'/.test(csp) && /default-src 'self'/.test(csp),
+  );
 
   const tampered = await fetch(`${BASE_URL}/api/chat`, {
     method: "POST",

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ChatMessage } from "@/lib/chat-types";
+import type { OpenFileTarget } from "@/lib/file-blocks";
 import { MessageItem } from "@/components/chat/MessageItem";
 import { Icon } from "@/components/ui/Icon";
 
@@ -13,6 +14,7 @@ type MessageListProps = {
   onContinue: (messageId: string) => void;
   onEdit: (messageId: string, content: string) => void;
   onDelete: (messageId: string) => void;
+  onOpenFile: (target: OpenFileTarget) => void;
 };
 
 export function MessageList({
@@ -23,6 +25,7 @@ export function MessageList({
   onContinue,
   onEdit,
   onDelete,
+  onOpenFile,
 }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const pinnedToBottom = useRef(true);
@@ -98,6 +101,7 @@ export function MessageList({
                 onContinue={onContinue}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                onOpenFile={onOpenFile}
               />
             ))}
           </div>

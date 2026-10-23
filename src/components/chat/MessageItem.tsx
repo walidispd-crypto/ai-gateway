@@ -1,9 +1,11 @@
 "use client";
 
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import type { ChatMessage } from "@/lib/chat-types";
 import { copyText } from "@/lib/clipboard";
+import { parseMessageBlocksCached, type OpenFileTarget } from "@/lib/file-blocks";
 import { MarkdownMessage } from "@/components/chat/MarkdownMessage";
+import { FileCard } from "@/components/chat/FileCard";
 import { Icon } from "@/components/ui/Icon";
 
 type MessageItemProps = {
@@ -15,6 +17,7 @@ type MessageItemProps = {
   onContinue: (messageId: string) => void;
   onEdit: (messageId: string, content: string) => void;
   onDelete: (messageId: string) => void;
+  onOpenFile: (target: OpenFileTarget) => void;
 };
 
 function ActionButton({
@@ -54,6 +57,7 @@ function MessageItemBase({
   onContinue,
   onEdit,
   onDelete,
+  onOpenFile,
 }: MessageItemProps) {
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -85,6 +89,12 @@ function MessageItemBase({
   // a custom name from the provider default (and see the fallback's own model).
   const modelName = !isUser ? message.modelName : undefined;
   const canCopy = message.content.trim().length > 0;
+
+  // Files are derived from the text on every render; nothing is added to the stored message.
+  const blocks = useMemo(
+    () => (isUser ? null : parseMessageBlocksCached(message.id, message.content, isActiveStream)),
+    [isUser, message.id, message.content, isActiveStream],
+  );
 
   async function onCopy() {
     if (!canCopy) return;
@@ -195,7 +205,30 @@ function MessageItemBase({
           <span className="stream-caret" aria-hidden="true" /> Menunggu jawaban…
         </p>
       ) : (
-        <MarkdownMessage content={message.content} streaming={isActiveStream} />
+        <div>
+          {(blocks ?? []).map((block, index) =>
+            block.kind === "text" ? (
+              <MarkdownMessage
+                key={`text-${index}`}
+                content={block.text}
+                streaming={isActiveStream && index === (blocks?.length ?? 0) - 1}
+              />
+            ) : (
+              <FileCard
+                key={`file-${block.file.index}`}
+                file={block.file}
+                streaming={isActiveStream}
+                onOpen={() =>
+                  onOpenFile({
+                    name: block.file.name,
+                    messageId: message.id,
+                    blockIndex: block.file.index,
+                  })
+                }
+              />
+            ),
+          )}
+        </div>
       )}
 
       {!editing && (message.status === "error" || message.status === "interrupted") ? (

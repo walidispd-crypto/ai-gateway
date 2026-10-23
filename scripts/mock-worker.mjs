@@ -12,20 +12,25 @@ import { createServer } from "node:http";
 const PORT = Number(process.env.MOCK_PORT ?? 8787);
 const requests = [];
 
+// Jawaban contoh memakai konvensi "Mode file" supaya panel file bisa dicoba langsung.
 const DEFAULT_TEXT = `Berikut perbaikannya.
 
-\`\`\`ts
+<file name="src/math.ts" lang="ts">
 export function add(a: number, b: number): number {
   return a + b;
 }
-\`\`\`
+</file>
 
 - Periksa tipe input.
 - Tambahkan tes untuk kasus negatif.
 
+<file name="catatan.md" lang="md">
+# Catatan
+
 | Kasus | Hasil |
 | --- | --- |
 | 1 + 2 | 3 |
+</file>
 `;
 
 function longText() {

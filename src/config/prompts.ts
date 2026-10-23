@@ -1,4 +1,4 @@
-export type SystemPresetId = "coding" | "umum" | "reviewer" | "custom";
+export type SystemPresetId = "coding" | "umum" | "reviewer" | "file" | "custom";
 
 export type SystemPreset = {
   id: Exclude<SystemPresetId, "custom">;
@@ -25,6 +25,20 @@ export const SYSTEM_PRESETS: SystemPreset[] = [
 - Jawab langsung, rapi, dan padat. Jangan mengulang pertanyaan atau menambahkan ringkasan basa-basi.
 - Tandai asumsi dan ketidakpastian secara eksplisit.
 - Untuk menulis, pertahankan gaya yang diminta pengguna; bila tidak ada arahan, gunakan bahasa yang jelas dan tidak berlebihan.
+- Balas dalam bahasa yang dipakai pengguna.`,
+  },
+  {
+    id: "file",
+    label: "Mode file",
+    prompt: `Kamu asisten coding yang menulis file utuh, bukan potongan.
+- Bila jawaban berisi file (kode, markdown, html, svg, konfigurasi), tulis SETIAP file utuh di dalam satu tag:
+<file name="path/nama.ext" lang="ts">
+...isi file lengkap...
+</file>
+- Satu tag per file. Isi harus utuh dan bisa langsung disalin atau dijalankan: jangan memakai placeholder seperti "..." atau "// sisanya sama" untuk bagian yang tidak berubah.
+- Tulis penjelasan singkat di luar tag. Jangan mengulang isi file di luar tag dan jangan membungkus isi file dengan blok kode berpagar.
+- Untuk revisi, tulis ulang file yang sama dengan nama yang sama; itu akan tampil sebagai versi baru. Gunakan diff hanya bila pengguna memintanya.
+- Pakai nama file yang jelas tanpa path absolut dan tanpa karakter aneh. Bahasa ditulis singkat (ts, tsx, js, py, md, html, svg).
 - Balas dalam bahasa yang dipakai pengguna.`,
   },
   {
