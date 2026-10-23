@@ -20,46 +20,56 @@ export type ModelConfig = {
   upstreamModel?: string;
 };
 
-// TODO(owner): point the env vars below at your Workers and set `format` to match each
-// Worker's response contract (README, "Kontrak endpoint"). Remove entries you do not use.
+// Tiga Worker = tiga penyedia. Nama variabel di Vercel harus sama persis dengan
+// endpointEnv / tokenEnv di bawah ini.
 export const MODELS: ModelConfig[] = [
+  // Penyedia 1 (radox)
   {
-    id: "coder-fast",
-    label: "Coder Fast",
-    description: "Cepat, untuk snippet dan perbaikan kecil",
-    endpointEnv: "WORKER_CODER_FAST_URL",
-    tokenEnv: "WORKER_CODER_FAST_TOKEN",
+    id: "luna",
+    label: "GPT-5.6 Luna",
+    description: "Penyedia 1 (radox)",
+    endpointEnv: "WORKER_RADOX_URL",
+    tokenEnv: "WORKER_RADOX_TOKEN",
     format: "openai",
     supportsSystemPrompt: true,
-    maxContextChars: 48_000,
-    tags: ["code", "fast"],
-    fallbackId: "coder-deep",
-  },
-  {
-    id: "coder-deep",
-    label: "Coder Deep",
-    description: "Lebih lambat, untuk refactor dan penalaran",
-    endpointEnv: "WORKER_CODER_DEEP_URL",
-    tokenEnv: "WORKER_CODER_DEEP_TOKEN",
-    format: "sse-text",
-    supportsSystemPrompt: true,
+    upstreamModel: "gpt-5.6-luna",
     maxContextChars: 120_000,
-    tags: ["code", "reasoning"],
+    tags: ["general", "fast"],
+    timeoutMs: 90_000,
+    fallbackId: "glm-p2",
   },
+  // Penyedia 2
   {
-    id: "general",
-    label: "General",
-    description: "Pertanyaan umum, menulis, dan analisis",
-    endpointEnv: "WORKER_GENERAL_URL",
-    tokenEnv: "WORKER_GENERAL_TOKEN",
-    format: "json-text",
+    id: "glm-p2",
+    label: "GLM 5.3 (penyedia 2)",
+    description: "Model reasoning, jawaban pertama bisa agak lama",
+    endpointEnv: "WORKER_P2_URL",
+    tokenEnv: "WORKER_P2_TOKEN",
+    format: "openai",
     supportsSystemPrompt: true,
-    maxContextChars: 24_000,
-    tags: ["general"],
+    upstreamModel: "glm-5.3",
+    maxContextChars: 120_000,
+    tags: ["general", "reasoning"],
+    timeoutMs: 90_000,
+    fallbackId: "glm-p3",
+  },
+  // Penyedia 3
+  {
+    id: "glm-p3",
+    label: "glm-5.3 (penyedia 3)",
+    description: "Penyedia 3, belum terverifikasi",
+    endpointEnv: "WORKER_P3_URL",
+    tokenEnv: "WORKER_P3_TOKEN",
+    format: "openai",
+    supportsSystemPrompt: true,
+    upstreamModel: "glm-5.3",
+    maxContextChars: 120_000,
+    tags: ["general", "reasoning"],
+    timeoutMs: 90_000,
   },
 ];
 
-export const DEFAULT_MODEL_ID = "coder-fast";
+export const DEFAULT_MODEL_ID = "glm-p2";
 
 export type PublicModel = Pick<
   ModelConfig,
